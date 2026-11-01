@@ -3,21 +3,10 @@ services:
     build: .
     container_name: tropicana-bot
     restart: unless-stopped
+    env_file: .env
     environment:
-      BOT_TOKEN: ${BOT_TOKEN}
-      DATABASE_URL: sqlite+aiosqlite:///./data/salon.db
-      TIMEZONE: Europe/Moscow
-      WORK_START_HOUR: "10"
-      WORK_END_HOUR: "22"
-      SLOT_MINUTES: "30"
-      BOOKING_HORIZON_DAYS: "7"
-      ADMIN_SECRET: ${ADMIN_SECRET}
-      ADMIN_CHAT_ID: ${ADMIN_CHAT_ID:-0}
-      SERVICES: ${SERVICES}
-      REMINDER_HOURS_BEFORE: ${REMINDER_HOURS_BEFORE:-3}
+      # внутри контейнера CSV лежит в примонтированной папке
+      CSV_FILE: /srv/app/data/bookings.csv
     volumes:
-      # база SQLite сохраняется между перезапусками контейнера
-      - bot_data:/srv/app/data
-
-volumes:
-  bot_data:
+      # файл bookings.csv переживает перезапуск контейнера
+      - ./data:/srv/app/data

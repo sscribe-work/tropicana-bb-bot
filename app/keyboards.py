@@ -1,7 +1,5 @@
-"""Inline-клавиатуры бота."""
-from __future__ import annotations
-
-from datetime import date, time
+"""Inline-клавиатуры бота (только aiogram, без сторонних библиотек)."""
+from datetime import date
 
 from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -9,7 +7,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 WEEKDAYS_RU = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"]
 
 
-def main_menu() -> InlineKeyboardMarkup:
+def main_menu():
     builder = InlineKeyboardBuilder()
     builder.button(text="📅 Записаться", callback_data="menu:new_booking")
     builder.button(text="📋 Мои записи", callback_data="menu:my_bookings")
@@ -18,38 +16,38 @@ def main_menu() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def days_keyboard(days: list[date], back_cb: str = "menu:main") -> InlineKeyboardMarkup:
-    """Кнопки с выбором дня (по 3 в ряду)."""
+def days_keyboard(days, back_cb="menu:main"):
+    """Кнопки с выбором дня (по 3 в ряду). days — список date."""
     builder = InlineKeyboardBuilder()
     for d in days:
-        label = f"{d.strftime('%d.%m')} {WEEKDAYS_RU[d.weekday()]}"
-        builder.button(text=label, callback_data=f"day:{d.isoformat()}")
+        label = "%s %s" % (d.strftime("%d.%m"), WEEKDAYS_RU[d.weekday()])
+        builder.button(text=label, callback_data="day:" + d.isoformat())
     builder.button(text="⬅️ Назад", callback_data=back_cb)
     builder.adjust(3)
     return builder.as_markup()
 
 
-def slots_keyboard(day: date, slots: list[time]) -> InlineKeyboardMarkup:
-    """Кнопки со свободными тайм-слотами."""
+def slots_keyboard(day_str, slots):
+    """Кнопки со свободными тайм-слотами (slots — список строк 'ЧЧ:ММ')."""
     builder = InlineKeyboardBuilder()
     for t in slots:
-        builder.button(text=t.strftime("%H:%M"), callback_data=f"slot:{day.isoformat()}|{t.strftime('%H:%M')}")
-    builder.button(text="⬅️ Другой день", callback_data=f"days:{day.isoformat()}")
+        builder.button(text=t, callback_data="slot:%s|%s" % (day_str, t))
+    builder.button(text="⬅️ Другой день", callback_data="days:" + day_str)
     builder.adjust(4)
     return builder.as_markup()
 
 
-def services_keyboard(services: list[tuple[str, int]]) -> InlineKeyboardMarkup:
-    """Кнопки с выбором услуги (по 1 в ряду)."""
+def services_keyboard(services):
+    """Кнопки с выбором услуги: [(название, длительность), ...]"""
     builder = InlineKeyboardBuilder()
     for i, (name, duration) in enumerate(services):
-        builder.button(text=f"{name} · {duration} мин", callback_data=f"svc:{i}")
+        builder.button(text="%s · %s мин" % (name, duration), callback_data="svc:%s" % i)
     builder.button(text="⬅️ Назад", callback_data="cancel_step")
     builder.adjust(1)
     return builder.as_markup()
 
 
-def phone_keyboard() -> InlineKeyboardMarkup:
+def phone_keyboard():
     """Кнопка-запрос контакта (телефона) — работает только в личных сообщениях."""
     builder = InlineKeyboardBuilder()
     builder.button(text="📱 Отправить телефон", request_contact=True)
@@ -57,19 +55,19 @@ def phone_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def confirm_keyboard(day: date, slot: time) -> InlineKeyboardMarkup:
+def confirm_keyboard(day_str, time_str):
     builder = InlineKeyboardBuilder()
-    builder.button(text="✅ Подтвердить запись", callback_data=f"confirm:{day.isoformat()}|{slot.strftime('%H:%M')}")
+    builder.button(text="✅ Подтвердить запись", callback_data="confirm:%s|%s" % (day_str, time_str))
     builder.button(text="❌ Отмена", callback_data="cancel_step")
     builder.adjust(1)
     return builder.as_markup()
 
 
-def bookings_keyboard(bookings: list[tuple[int, str]]) -> InlineKeyboardMarkup:
-    """Список записей клиента с кнопками отмены."""
+def bookings_keyboard(bookings):
+    """Список записей клиента с кнопками отмены: [(id, подпись), ...]"""
     builder = InlineKeyboardBuilder()
     for booking_id, label in bookings:
-        builder.button(text=f"❌ {label}", callback_data=f"drop:{booking_id}")
+        builder.button(text="❌ " + label, callback_data="drop:" + str(booking_id))
     builder.button(text="⬅️ В меню", callback_data="menu:main")
     builder.adjust(1)
     return builder.as_markup()

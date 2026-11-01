@@ -1,6 +1,5 @@
-# syntax=docker/dockerfile:1
-
-FROM python:3.12-slim AS base
+# Простой Dockerfile: Python + зависимости + код бота
+FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -8,13 +7,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /srv/app
 
-# Зависимости отдельным слоем для кэширования
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
 
-# Непривилегированный пользователь + каталог для SQLite
+# непривилегированный пользователь + папка под CSV-файл
 RUN useradd --create-home --uid 1000 bot && \
     mkdir -p /srv/app/data && chown -R bot:bot /srv/app
 USER bot
