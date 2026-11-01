@@ -13,6 +13,7 @@ from aiogram.types import BotCommand
 from app.config import get_settings
 from app.db.session import init_db
 from app.handlers import routers
+from app.scheduler import create_scheduler
 
 settings = get_settings()
 
@@ -35,10 +36,28 @@ async def main() -> None:
         [
             BotCommand(command="/start", description="Начать запись"),
             BotCommand(command="/help", description="Как записаться"),
+            BotCommand(command="/skip", description="Пропустить ввод телефона"),
         ]
     )
 
-    await dp.start_polling(bot)
+    scheduler = create_scheduler(bot)
+    scheduler.start()
+    # Сразу проверим, нет ли «созревших» напоминаний после рестарта контейнера
+    await send_due_reminders_soon(bot)
+
+    try:
+        await dp.start_polling(bot)
+    finally:
+        scheduler.shutdown(wait=False)
+
+
+async def send_due_reminders_soon(bot: Bot) -> None:
+    from app.scheduler import send_due_reminders
+
+    try:
+        await send_due_reminders(bot)
+    except Exception:
+        logging.getLogger(__name__).exception("Ошибка при стартовой проверке напоминаний")
 
 
 if __name__ == "__main__":

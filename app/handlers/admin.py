@@ -50,12 +50,14 @@ async def cmd_bookings(message: Message) -> None:
         await message.answer("📭 На ближайшую неделю записей нет.")
         return
 
-    lines = [f"🗓 <b>Записи на 7 дней ({len(rows)}):</b>\n"]
+    lines = [f"🗓 <b>Tropicana SPB — записи на 7 дней ({len(rows)}):</b>\n"]
     current_day = None
     for b in rows:
         if b.booking_date != current_day:
             current_day = b.booking_date
             lines.append(f"\n<b>{day_label(b.booking_date)}</b>")
-        lines.append(f"• {b.booking_time.strftime('%H:%M')} — {b.client_name} (id {b.telegram_id})")
+        lines.append(
+            f"• {b.booking_time.strftime('%H:%M')} — {b.client_name}, {b.service}, 📱 {b.client_phone}"
+        )
 
     await message.answer("\n".join(lines))

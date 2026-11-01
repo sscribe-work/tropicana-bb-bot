@@ -25,6 +25,15 @@ SessionMaker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=
 async def init_db() -> None:
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Простая миграция «на месте» для SQLite: добавляем недостающие колонки
+        # (появились в новых версиях схемы). Для PostgreSQL аналогично.
+        if settings.database_url.startswith("sqlite"):
+            res = await conn.exec_driver_sql("PRAGMA table_info(bookings)")
+            columns = {row[1] for row in res.fetchall()}
+            if "reminder_sent" not in columns:
+                await conn.exec_driver_sql(
+                    "ALTER TABLE bookings ADD COLUMN reminder_sent BOOLEAN NOT NULL DEFAULT 0"
+                )
 
 
 async def get_session() -> AsyncIterator[AsyncSession]:

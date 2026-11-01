@@ -39,6 +39,24 @@ def slots_keyboard(day: date, slots: list[time]) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
+def services_keyboard(services: list[tuple[str, int]]) -> InlineKeyboardMarkup:
+    """Кнопки с выбором услуги (по 1 в ряду)."""
+    builder = InlineKeyboardBuilder()
+    for i, (name, duration) in enumerate(services):
+        builder.button(text=f"{name} · {duration} мин", callback_data=f"svc:{i}")
+    builder.button(text="⬅️ Назад", callback_data="cancel_step")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def phone_keyboard() -> InlineKeyboardMarkup:
+    """Кнопка-запрос контакта (телефона) — работает только в личных сообщениях."""
+    builder = InlineKeyboardBuilder()
+    builder.button(text="📱 Отправить телефон", request_contact=True)
+    builder.adjust(1)
+    return builder.as_markup()
+
+
 def confirm_keyboard(day: date, slot: time) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text="✅ Подтвердить запись", callback_data=f"confirm:{day.isoformat()}|{slot.strftime('%H:%M')}")

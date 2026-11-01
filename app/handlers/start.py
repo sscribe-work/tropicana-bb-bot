@@ -12,14 +12,17 @@ from app.keyboards import main_menu
 start_router = Router()
 settings = get_settings()
 
+SALON_NAME = "Tropicana SPB"
+
 WELCOME = (
-    "👋 Добро пожаловать в салон красоты <b>Lumière</b>!\n\n"
+    f"👋 Добро пожаловать в салон красоты <b>{SALON_NAME}</b>!\n\n"
     f"Мы работаем ежедневно с {settings.work_start_hour:02d}:00 до {settings.work_end_hour:02d}:00.\n"
     "Записаться можно на любое свободное время с шагом {step} минут, выбранная дата показана кнопками.\n\n"
     "Что вы можете:\n"
-    "• 📅 Записаться — выбрать день и тайм-слот\n"
+    "• 📅 Записаться — выбрать день, тайм-слот и услугу\n"
     "• 📋 Мои записи — посмотреть и отменить визит\n"
-    "• ℹ️ О салоне — адреса и услуги"
+    "• ℹ️ О салоне — адреса и услуги\n"
+    f"⏰ За {settings.reminder_hours_before} ч до визита пришлём напоминание."
 )
 
 
@@ -35,9 +38,12 @@ async def cmd_help(message: Message) -> None:
         "Как записаться:\n"
         "1️⃣ Нажмите «📅 Записаться»\n"
         "2️⃣ Выберите день\n"
-        "3️⃣ Выберите свободный тайм-слот\n"
-        "4️⃣ Укажите имя и подтвердите запись\n\n"
-        "Отменить или перенести визит можно в разделе «📋 Мои записи».",
+        f"3️⃣ Выберите свободный тайм-слот (с {settings.work_start_hour:02d}:00 до {settings.work_end_hour:02d}:00, шаг {settings.slot_minutes} мин)\n"
+        "4️⃣ Выберите услугу\n"
+        "5️⃣ Укажите имя и телефон\n"
+        "6️⃣ Подтвердите запись\n\n"
+        "Отменить визит можно в разделе «📋 Мои записи». "
+        f"За {settings.reminder_hours_before} ч до визита пришлём напоминание.",
     )
 
 
@@ -50,12 +56,13 @@ async def cb_main_menu(callback: CallbackQuery, state: FSMContext) -> None:
 
 @start_router.callback_query(F.data == "menu:about")
 async def cb_about(callback: CallbackQuery) -> None:
+    services = "\n".join(f"• {name} ({dur} мин)" for name, dur in settings.service_list())
     await callback.message.edit_text(
-        "💇‍♀️ <b>Салон красоты Lumière</b>\n\n"
-        "📍 г. Москва, ул. Тверская, 1\n"
-        "📞 +7 (495) 123-45-67\n"
+        f"💇‍♀️ <b>Салон красоты {SALON_NAME}</b>\n\n"
+        "📍 г. Санкт-Петербург, Невский проспект, 1\n"
+        "📞 +7 (812) 123-45-67\n"
         f"🕐 Ежедневно {settings.work_start_hour:02d}:00–{settings.work_end_hour:02d}:00\n\n"
-        "Услуги: стрижка, окрашивание, маникюр, педикюр, уходовые процедуры.",
+        f"<b>Услуги:</b>\n{services}",
         reply_markup=main_menu(),
     )
     await callback.answer()

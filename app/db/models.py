@@ -59,6 +59,9 @@ class Booking(Base):
         index=True,
     )
 
+    # Флаг «напоминание о визите уже отправлено» (чтобы не слать дважды)
+    reminder_sent: Mapped[bool] = mapped_column(default=False)
+
 
 async def get_free_slots(session, day: date, start: time, end: time, step_minutes: int) -> list[time]:
     """Возвращает свободные тайм-слоты на указанный день."""
@@ -108,3 +111,41 @@ async def cancel_booking(session, booking_id: int) -> Booking | None:
         booking.status = BookingStatus.CANCELLED
         await session.commit()
     return booking
+
+
+async def get_active_bookings(session, telegram_id: int | None = None) -> list[Booking]:
+    """Активные записи клиента (или все активные, если telegram_id=None)."""
+    query = select(Booking).where(Booking.status == BookingStatus.ACTIVE)
+    if telegram_id is not None:
+        query = query.where(Booking.telegram_id == telegram_id)
+    rows = (
+        await session.scalars(query.order_by(Booking.booking_date, Booking.booking_time))
+    ).all()
+    return list(rows)
+
+
+async def get_bookings_between(session, start_dt, end_dt) -> list[Booking]:
+    """Активные записи, начинающиеся в промежутке [start_dt, end_dt) (aware datetime)."""
+    rows = (
+        await session.scalars(
+            select(Booking)
+            .where(
+                Booking.status == BookingStatus.ACTIVE,
+                Booking.reminder_sent.is_(False),
+            )
+            .order_by(Booking.booking_date, Booking.booking_time)
+        )
+    ).all()
+    result: list[Booking] = []
+    for b in rows:
+        starts = datetime.combine(b.booking_date, b.booking_time, tzinfo=start_dt.tzinfo)
+        if start_dt <= starts < end_dt:
+            result.append(b)
+    return result
+
+
+async def mark_reminder_sent(session, booking_id: int) -> None:
+    booking = await session.get(Booking, booking_id)
+    if booking:
+        booking.reminder_sent = True
+        await session.commit()
